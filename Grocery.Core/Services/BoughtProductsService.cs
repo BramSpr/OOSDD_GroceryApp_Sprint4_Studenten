@@ -20,19 +20,23 @@ namespace Grocery.Core.Services
         }
         public List<BoughtProducts> Get(int? productId)
         {
-            var items = _groceryListItemsRepository.GetAll();
+            var allItems = _groceryListItemsRepository.GetAll();
 
             if (productId.HasValue)
-                items = items.Where(i => i.ProductId == productId.Value).ToList();
+                allItems = allItems.Where(i => i.ProductId == productId.Value).ToList();
 
-            return items
-                .GroupBy(i => i.ProductId)
-                .Select(g => new BoughtProducts(
-                    client: null,
-                    groceryList: null,
-                    product: _productRepository.Get(g.Key) ?? new Product(0, "", 0)
-                ))
-                .ToList();
+            var result = allItems.Select(item =>
+            {
+                var groceryList = _groceryListRepository.Get(item.GroceryListId);
+
+                var client = _clientRepository.Get(groceryList.ClientId);
+
+                var product = _productRepository.Get(item.ProductId);
+
+                return new BoughtProducts(client, groceryList, product);
+            }).ToList();
+
+            return result;
         }
     }
 }
